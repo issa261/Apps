@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام التنقيب الجيولوجي</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        label { display: block; margin-top: 10px; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+        button { margin-top: 15px; padding: 10px 20px; border: none; border-radius: 5px; background: #007bff; color: #fff; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .results { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9; }
+        img { max-width: 100%; margin-top: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        pre { background: #eee; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>نظام التنقيب الجيولوجي</h1>
+
+        <label for="lat">خط العرض (Latitude):</label>
+        <input type="number" step="0.0001" id="lat" value="{{ default_lat }}">
+
+        <label for="lon">خط الطول (Longitude):</label>
+        <input type="number" step="0.0001" id="lon" value="{{ default_lon }}">
+
+        <label for="bbox">حجم المنطقة (bbox size, درجة):</label>
+        <input type="number" step="0.01" id="bbox" value="0.03">
+
+        <button onclick="analyze()">🔍 تحليل الموقع</button>
+
+        <div class="results" id="results" style="display:none;">
+            <h2>نتائج التحليل</h2>
+            <pre id="json-output"></pre>
+            <img id="dem-image" src="" alt="DEM Image">
+        </div>
+    </div>
+
+    <script>
+        async function analyze() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            const bbox_size = parseFloat(document.getElementById('bbox').value);
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('json-output').textContent = 'جاري التحليل...';
+            document.getElementById('dem-image').src = '';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lon, bbox_size })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('json-output').textContent = JSON.stringify(data.analysis_report, null, 4);
+                    document.getElementById('dem-image').src = 'data:image/png;base64,' + data.image;
+                } else {
+                    document.getElementById('json-output').textContent = 'حدث خطأ: ' + data.error;
+                }
+            } catch (err) {
+                document.getElementById('json-output').textContent = 'فشل الاتصال بالخادم';
+            }
+        }
+    </script>
+</body>
+</html>
